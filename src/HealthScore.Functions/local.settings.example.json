@@ -1,0 +1,18 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "DataverseUrl": "https://<your-org>.crm.dynamics.com",
+    "DataverseClientId": "<app-registration-client-id>",
+    "DataverseClientSecret": "<app-registration-secret>",
+    "DataverseTenantId": "<entra-tenant-id>",
+
+    "OpenAIEndpoint": "https://<your-resource>.openai.azure.com/",
+    "OpenAIKey": "<azure-openai-key>",
+    "OpenAIDeploymentName": "<chat-model-deployment>",
+
+    "HealthScoreAppId": ""
+  }
+}

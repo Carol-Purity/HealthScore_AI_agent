@@ -1,0 +1,28 @@
+# Secrets: never commit real settings (use local.settings.example.json as the template)
+local.settings.json
+*.publishsettings
+*.pubxml.user
+
+# Build output
+bin/
+obj/
+publish/
+out/
+
+# IDE
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+
+# Azure Functions / tooling
+appsettings.*.local.json
+__azurite_db*__.json
+__blobstorage__/
+__queuestorage__/
+
+# OS
+.DS_Store
+Thumbs.db
