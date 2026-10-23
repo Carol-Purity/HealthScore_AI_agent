@@ -1,4 +1,5 @@
 using Microsoft.PowerPlatform.Dataverse.Client;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 
@@ -38,8 +39,29 @@ public sealed class DraftMetadataCache
         return metadata;
     }
 
-    public static AttributeMetadata? GetColumn(EntityMetadata table, string? column) =>
+    public static AttributeMetadata? GetColumn(EntityMetadata? table, string? column) =>
         string.IsNullOrWhiteSpace(column)
             ? null
-            : table.Attributes?.FirstOrDefault(a => string.Equals(a.LogicalName, column, StringComparison.OrdinalIgnoreCase));
+            : table?.Attributes?.FirstOrDefault(a => string.Equals(a.LogicalName, column.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    // The label in the user's language, or null.
+    public static string? Text(Label? label) => label?.UserLocalizedLabel?.Label;
+
+    // Option values and labels for choice, state, status and yes/no columns (same labels the engine shows).
+    public static List<(int Value, string Label)> Options(AttributeMetadata? a)
+    {
+        if (a is BooleanAttributeMetadata b && b.OptionSet != null)
+            return new List<(int, string)>
+            {
+                (1, Text(b.OptionSet.TrueOption?.Label) ?? "Yes"),
+                (0, Text(b.OptionSet.FalseOption?.Label) ?? "No")
+            };
+
+        if (a is EnumAttributeMetadata e && e.OptionSet?.Options != null)
+            return e.OptionSet.Options.Where(o => o.Value.HasValue)
+                .Select(o => (o.Value!.Value, Text(o.Label) ?? o.Value!.Value.ToString()))
+                .ToList();
+
+        return new List<(int, string)>();
+    }
 }

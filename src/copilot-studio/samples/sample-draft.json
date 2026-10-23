@@ -1,0 +1,86 @@
+{
+  "profile": {
+    "name": "Account Health (AI draft test v2)",
+    "targetTable": "account",
+    "description": "Test draft created from sample-draft.json",
+    "aiEnabled": true
+  },
+  "dataSources": [
+    {
+      "table": "opportunity",
+      "relationshipColumn": "parentaccountid",
+      "weight": 50,
+      "rules": [
+        {
+          "name": "Open hot or warm opportunity",
+          "impact": 1,
+          "scoreValue": 25,
+          "filter": {
+            "conditions": [
+              { "column": "statecode", "operator": "eq", "value": "Open" },
+              { "column": "opportunityratingcode", "operator": "in", "values": ["Hot", "Warm"] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "table": "incident",
+      "relationshipColumn": "customerid",
+      "weight": 30,
+      "rules": [
+        {
+          "name": "Recently resolved case",
+          "impact": 1,
+          "scoreValue": 10,
+          "filter": {
+            "conditions": [
+              { "column": "statecode", "operator": "eq", "value": "Resolved" },
+              { "column": "modifiedon", "operator": "last-x-days", "value": 90 }
+            ]
+          }
+        },
+        {
+          "name": "Open case that is high priority or over 30 days old",
+          "impact": 2,
+          "scoreValue": 10,
+          "filter": {
+            "type": "and",
+            "conditions": [
+              { "column": "statecode", "operator": "eq", "value": "Active" }
+            ],
+            "filters": [
+              {
+                "type": "or",
+                "conditions": [
+                  { "column": "prioritycode", "operator": "eq", "value": "High" },
+                  { "column": "createdon", "operator": "olderthan-x-days", "value": 30 }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "table": "email",
+      "relationshipColumn": "regardingobjectid",
+      "weight": 20,
+      "rules": [
+        {
+          "name": "Email in the last 30 days",
+          "impact": 1,
+          "scoreValue": 5,
+          "filter": {
+            "conditions": [
+              { "column": "createdon", "operator": "last-x-days", "value": 30 }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "unsupportedRequests": [
+    "Score accounts by their total open opportunity revenue (totals per account aren't supported)"
+  ]
+}
