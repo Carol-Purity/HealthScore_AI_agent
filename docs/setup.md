@@ -52,3 +52,7 @@ func azure functionapp publish <function-app-name>
 | `src/webresources/reliance_healthdashboard.html` | Upload as a Webpage (HTML) web resource. Add it to a dashboard (untick *Restrict cross-frame scripting*) or as a page in the app's navigation |
 
 The dashboard's "View all" links use three system views on Health Score Result. Set their IDs in `CONFIG.views` at the top of the dashboard script. Opened outside Dynamics, the dashboard runs on sample data.
+
+## 5. Configure with AI (optional)
+
+The Copilot Studio agent, its custom connector and its web resources are set up separately. See [copilot-agent.md](copilot-agent.md#setup).

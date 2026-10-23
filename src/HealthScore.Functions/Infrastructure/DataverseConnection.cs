@@ -5,6 +5,8 @@ namespace AccountHealthScoreFunction;
 // One place that builds the Dataverse connection from app settings (client-secret auth as an application user).
 public static class DataverseConnection
 {
+    public static string? Env(string name) => Environment.GetEnvironmentVariable(name);
+
     public static ServiceClient Create()
     {
         string url = Environment.GetEnvironmentVariable("DataverseUrl") ?? "";

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>AI Health Score</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f7f9fc;
+            color: #242424;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 850px;
+            background: white;
+            border-radius: 12px;
+            padding: 55px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .icon {
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 30px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #616161;
+            line-height: 1.6;
+            max-width: 620px;
+            margin: 0 auto 35px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 14px 25px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 190px;
+        }
+
+        .primary {
+            background: #0f6cbd;
+            color: white;
+            border: none;
+        }
+
+        .primary:hover {
+            background: #115ea3;
+        }
+
+        .secondary {
+            background: white;
+            color: #242424;
+            border: 1px solid #d1d1d1;
+        }
+
+        .secondary:hover {
+            background: #f5f5f5;
+        }
+
+        .profiles {
+            margin-top: 45px;
+            padding-top: 25px;
+            border-top: 1px solid #eeeeee;
+            color: #616161;
+        }
+
+        .profiles-title {
+            font-weight: 600;
+            color: #242424;
+            margin-bottom: 8px;
+        }
+
+        .profile-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            margin-top: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .profile-row:hover {
+            background: #f0f4f9;
+        }
+
+        .profile-link {
+            font-size: 14px;
+            color: #242424;
+            text-decoration: none;
+        }
+
+        .profile-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: none;
+        }
+
+        .row-action {
+            min-width: 0;
+            padding: 5px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #d1d1d1;
+            background: #ffffff;
+            color: #242424;
+        }
+
+        .row-action:hover {
+            background: #f5f5f5;
+        }
+
+        .row-action:focus-visible {
+            outline: 2px solid #0f6cbd;
+            outline-offset: 2px;
+        }
+
+        .profile-status {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            letter-spacing: 0.3px;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-draft {
+            background: #fef3c7;
+            color: #a16207;
+        }
+
+        .status-inactive {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        /* ===== Configure with AI: chat panel ===== */
+        .aid-backdrop {
+            position: fixed; inset: 0; background: rgba(32, 31, 30, 0.4);
+            opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 9998;
+        }
+        .aid-backdrop.aid-open { opacity: 1; pointer-events: auto; }
+
+        .aid-panel {
+            position: fixed; top: 0; right: 0; bottom: 0;
+            width: min(480px, 100vw); background: #ffffff;
+            box-shadow: -8px 0 24px rgba(0, 0, 0, 0.16);
+            display: flex; flex-direction: column;
+            transform: translateX(100%); transition: transform 0.25s ease; z-index: 9999;
+            text-align: left;
+        }
+        .aid-panel.aid-open { transform: translateX(0); }
+
+        .aid-header {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 16px 16px 12px 20px; border-bottom: 1px solid #edebe9;
+        }
+        .aid-header-text { flex: 1; }
+        .aid-title { margin: 0; font-size: 18px; font-weight: 600; color: #242424; }
+        .aid-note { margin: 4px 0 0; font-size: 13px; line-height: 1.4; color: #616161; }
+
+        /* Panel buttons override the page's large button style */
+        .aid-panel button { min-width: 0; font-weight: 400; }
+        .aid-btn {
+            border: 1px solid #d1d1d1; background: #ffffff; color: #242424;
+            border-radius: 4px; font-size: 13px; padding: 5px 10px;
+        }
+        .aid-btn:hover { background: #f5f5f5; }
+        .aid-close {
+            border: none; background: transparent; font-size: 22px; line-height: 1;
+            color: #616161; padding: 2px 6px; border-radius: 4px;
+        }
+        .aid-close:hover { background: #f5f5f5; color: #242424; }
+        .aid-btn:focus-visible, .aid-close:focus-visible { outline: 2px solid #0f6cbd; outline-offset: 2px; }
+
+        .aid-body { flex: 1; position: relative; }
+        .aid-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .aid-loading {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            color: #616161; font-size: 14px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .aid-backdrop, .aid-panel { transition: none; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="card">
+
+            <div class="icon">✨</div>
+
+            <h1>AI Health Score Configuration</h1>
+
+            <p class="subtitle">
+                Create a health score for your Dynamics data.
+                Tell us what you want to measure and we'll help
+                configure the scoring engine for you.
+            </p>
+
+            <div class="buttons">
+
+                <button class="primary" id="configureAI">
+                    ✨ Configure with AI
+                </button>
+
+                <button class="secondary" id="configureManual">
+                    ⚙ Configure Manually
+                </button>
+
+            </div>
+
+            <div class="profiles">
+
+                <div class="profiles-title">
+                    Existing Health Score Profiles
+                </div>
+
+                <div id="existing-profiles-list">
+                    No profiles configured yet.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Review and activate dialog (web resource: reliance_ReviewActivate) -->
+    <script src="reliance_ReviewActivate"></script>
+
+    <script>
+
+        // ===== Configure with AI settings =====
+        // Only the web address from inside src="..." of the Copilot Studio embed code.
+        const AGENT_URL = "<agent web chat URL from Copilot Studio: Channels > Web app, the src of the iframe>";
+
+        // "panel"  = chat opens inside this page (agent must use No authentication).
+        // "newtab" = opens AGENT_URL in a new tab (for a sign-in channel later).
+        const AI_MODE = "panel";
+
+        document.getElementById("configureAI")
+            .addEventListener("click", function () {
+
+                openAiDesigner();
+
+            });
+
+        document.getElementById("configureManual")
+            .addEventListener("click", function () {
+
+                if (window.parent && window.parent.Xrm) {
+
+                    window.parent.Xrm.Navigation.openForm({
+                        entityName: "reliance_healthscoreprofile"
+                    });
+
+                } else {
+
+                    alert("Dynamics context is not available.");
+                }
+
+            });
+
+        // ===== Review and activate =====
+        function openReview(profileId) {
+            if (typeof window.openReviewDialog !== "function") {
+                alert("The review screen couldn't be loaded. Check that the web resource reliance_ReviewActivate is published.");
+                return;
+            }
+            window.openReviewDialog(profileId, loadExistingProfiles);
+        }
+
+        // The Done button on the Profile form opens this page with data "profileId=<guid>".
+        function getProfileIdFromUrl() {
+            var params = new URLSearchParams(window.location.search);
+            var id = params.get("profileId");
+            var data = params.get("data");
+            if (!id && data) id = new URLSearchParams(data).get("profileId");
+            return id ? id.replace(/[{}]/g, "") : null;
+        }
+
+        async function loadExistingProfiles() {
+
+            var container = document.getElementById("existing-profiles-list");
+
+            if (!(window.parent && window.parent.Xrm)) {
+                container.innerHTML = "Dynamics context not available.";
+                return;
+            }
+
+            try {
+
+                var result = await window.parent.Xrm.WebApi.retrieveMultipleRecords(
+                    "reliance_healthscoreprofile",
+                    "?$select=reliance_profilename,reliance_targettable,reliance_status&$orderby=createdon desc"
+                );
+
+                if (result.entities.length === 0) {
+                    container.innerHTML = "No profiles configured yet.";
+                    return;
+                }
+
+                container.innerHTML = "";
+
+                result.entities.forEach(function (profile) {
+
+                    var row = document.createElement("div");
+                    row.className = "profile-row";
+
+                    var nameSpan = document.createElement("span");
+                    nameSpan.className = "profile-link";
+                    nameSpan.innerText =
+                        profile.reliance_profilename +
+                        " — " +
+                        (profile.reliance_targettable || "no target set");
+
+                    var statusBadge = document.createElement("span");
+                    var statusValue = profile.reliance_status;
+                    var statusLabel = statusValue === 2 ? "Active" : statusValue === 3 ? "Inactive" : "Draft";
+                    statusBadge.className = "profile-status status-" + statusLabel.toLowerCase();
+                    statusBadge.innerText = statusLabel;
+
+                    var reviewButton = document.createElement("button");
+                    reviewButton.type = "button";
+                    reviewButton.className = "row-action";
+                    reviewButton.innerText = "Review";
+                    reviewButton.setAttribute("aria-label", "Review " + profile.reliance_profilename);
+                    reviewButton.addEventListener("click", function (e) {
+                        e.stopPropagation(); // don't also open the form
+                        openReview(profile.reliance_healthscoreprofileid);
+                    });
+
+                    var right = document.createElement("span");
+                    right.className = "profile-right";
+                    right.appendChild(statusBadge);
+                    right.appendChild(reviewButton);
+
+                    row.appendChild(nameSpan);
+                    row.appendChild(right);
+
+                    row.addEventListener("click", function () {
+                        window.parent.Xrm.Navigation.openForm({
+                            entityName: "reliance_healthscoreprofile",
+                            entityId: profile.reliance_healthscoreprofileid
+                        });
+                    });
+
+                    container.appendChild(row);
+                });
+
+            } catch (error) {
+                container.innerHTML = "Unable to load profiles.";
+                console.error("Failed to load profiles:", error);
+            }
+        }
+
+        async function initPage() {
+            await loadExistingProfiles();
+            var profileId = getProfileIdFromUrl();
+            if (profileId) {
+                // Remove it from the address so a refresh doesn't reopen the dialog
+                history.replaceState(null, "", window.location.pathname);
+                openReview(profileId);
+            }
+        }
+
+        window.addEventListener("load", initPage);
+
+        // ===== Configure with AI: chat panel =====
+        var aidBackdrop, aidPanel, aidBody, aidFrame, aidOpener;
+
+        function buildAiPanel() {
+            aidBackdrop = document.createElement("div");
+            aidBackdrop.className = "aid-backdrop";
+            aidBackdrop.addEventListener("click", closeAiDesigner);
+
+            aidPanel = document.createElement("aside");
+            aidPanel.className = "aid-panel";
+            aidPanel.setAttribute("role", "dialog");
+            aidPanel.setAttribute("aria-modal", "true");
+            aidPanel.setAttribute("aria-labelledby", "aid-title");
+            aidPanel.innerHTML =
+                '<div class="aid-header">' +
+                    '<div class="aid-header-text">' +
+                        '<h2 class="aid-title" id="aid-title">Configure with AI</h2>' +
+                        '<p class="aid-note">Describe what healthy looks like. Anything created is saved as a Draft, and you activate it yourself.</p>' +
+                    '</div>' +
+                    '<button type="button" class="aid-btn" id="aid-restart" title="Start a new conversation">New chat</button>' +
+                    '<button type="button" class="aid-close" id="aid-close" aria-label="Close">&times;</button>' +
+                '</div>' +
+                '<div class="aid-body"><div class="aid-loading">Opening the assistant…</div></div>';
+
+            aidBody = aidPanel.querySelector(".aid-body");
+            aidPanel.querySelector("#aid-close").addEventListener("click", closeAiDesigner);
+            aidPanel.querySelector("#aid-restart").addEventListener("click", function () { loadAiFrame(true); });
+
+            document.body.appendChild(aidBackdrop);
+            document.body.appendChild(aidPanel);
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape" && aidPanel.classList.contains("aid-open")) closeAiDesigner();
+            });
+        }
+
+        function loadAiFrame(restart) {
+            if (aidFrame && !restart) return; // keep the conversation when the panel is reopened
+            if (aidFrame) aidFrame.remove();
+            aidFrame = document.createElement("iframe");
+            aidFrame.className = "aid-frame";
+            aidFrame.title = "Health Score Designer chat";
+            aidFrame.src = AGENT_URL;
+            aidBody.appendChild(aidFrame);
+        }
+
+        function openAiDesigner() {
+            if (AI_MODE === "newtab") {
+                window.open(AGENT_URL, "_blank", "noopener");
+                return;
+            }
+            if (!aidPanel) buildAiPanel();
+            aidOpener = document.activeElement;
+            loadAiFrame(false);
+            aidBackdrop.classList.add("aid-open");
+            aidPanel.classList.add("aid-open");
+            aidPanel.querySelector("#aid-close").focus();
+        }
+
+        function closeAiDesigner() {
+            aidBackdrop.classList.remove("aid-open");
+            aidPanel.classList.remove("aid-open");
+            if (aidOpener && aidOpener.focus) aidOpener.focus();
+            // Reload the list so a newly created Draft profile appears.
+            loadExistingProfiles();
+        }
+
+    </script>
+
+</body>
+
+</html>

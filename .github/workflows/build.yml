@@ -21,4 +21,13 @@ jobs:
         run: dotnet build src/HealthScore.Functions/HealthScore.Functions.csproj --configuration Release
 
       - name: Check web resource scripts
-        run: node --check src/webresources/reliance_rulecondition.js
+        run: |
+          for f in src/webresources/*.js; do node --check "$f"; done
+          for f in src/webresources/*.html; do
+            name=$(basename "$f" .html)
+            awk '/<script>/{flag=1;next}/<\/script>/{flag=0}flag' "$f" > "/tmp/$name.js"
+            node --check "/tmp/$name.js"
+          done
+
+      - name: Check Copilot connector definition
+        run: node -e "JSON.parse(require('fs').readFileSync('src/copilot-studio/connector/HealthScoreDesigner.swagger.json','utf8'))"

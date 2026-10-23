@@ -15,6 +15,9 @@ Configuration lives in **Dataverse** and is edited by admins in model-driven for
 | Readiness check | Azure Function | Read-only validation, using exactly the engine's logic |
 | Config reader | Azure Function | Returns a profile's configuration as JSON |
 | Dashboard | HTML/JS web resource | Profile-driven portfolio view, hosted on a dashboard or as an app page |
+| Health Score Designer | Copilot Studio agent + custom connector | Drafts profiles from a plain-language description ([copilot-agent.md](copilot-agent.md)) |
+| Copilot functions | Azure Functions | Metadata discovery, draft validation with a dry run, and Draft-only creation |
+| Landing page and review dialog | HTML/JS web resources | Entry point, readiness review, test scoring, activation and downloadable report |
 
 ## Request flow (one score)
 

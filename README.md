@@ -29,6 +29,7 @@ Sales teams can't read every email, case and opportunity to know which customers
 | **Metadata-driven and table-agnostic** | Profiles can target any Dataverse table. The engine resolves tables, name columns and relationships from metadata at runtime, and reads the link to the scored record directly from each rule's FetchXML. |
 | **Safe query scoping** | The engine injects its own `AND` filter under each rule's `<entity>`, so no admin-written condition, OR groups included, can ever pull in another record's data. |
 | **Scales to large portfolios** | The dashboard uses FetchXML aggregate queries for counts, averages and distributions, so it stays fast with thousands of records. "View all" hands off to native Dataverse views for paging, filtering and export. |
+| **Configure with AI** | A Copilot Studio agent turns a plain-language description of health into a validated Draft profile. It never writes queries or activates anything: server code builds the FetchXML, every rule is test-run before saving, and a person activates through a readiness review. See [docs/copilot-agent.md](docs/copilot-agent.md). |
 | **Low-friction admin experience** | The redesign removed a whole configuration layer. Tables and relationships are picked rather than typed, and a read-only readiness check validates a profile before it goes live. |
 
 ## Architecture
@@ -36,12 +37,15 @@ Sales teams can't read every email, case and opportunity to know which customers
 ```mermaid
 flowchart LR
     Admin["Admin<br/>model-driven forms<br/>+ FetchXML condition builder"] -->|configures| Config
+    Admin -->|describes health in chat| Agent["Copilot Studio agent<br/>Health Score Designer"]
+    Agent -->|custom connector| Copilot
     Callers["Callers<br/>account form · dashboard<br/>copilot · flows"] -->|HTTPS + function key| Evaluate
 
     subgraph Azure["Azure Functions (.NET 8 isolated)"]
         Evaluate["EvaluateHealthScoreProfile<br/>scores one record"]
         Readiness["CheckProfileReadiness<br/>validates before activation"]
         GetConfig["GetHealthScoreConfig<br/>profile as JSON"]
+        Copilot["GetScoringMetadata · ValidateHealthScoreDraft<br/>CreateHealthScoreDraft (Draft only)"]
     end
 
     subgraph Dataverse["Dataverse"]
@@ -56,6 +60,7 @@ flowchart LR
     Evaluate -->|saves| Results
     Readiness -->|reads| Config
     GetConfig -->|reads| Config
+    Copilot -->|creates Draft profiles| Config
     Dashboard["Dashboard web resource"] -->|aggregate queries| Results
 ```
 
@@ -88,13 +93,25 @@ src/
       EvaluateHealthScoreProfile.cs   scoring engine (rules → AI review → guardrails → persist)
       CheckProfileReadiness.cs        read-only validation before a profile is activated
       GetHealthScoreConfig.cs         returns a profile's configuration as JSON
-    Infrastructure/                   Dataverse connection and metadata cache
+      GetScoringMetadata.cs           Copilot: tables, columns and operators the agent may use
+      ValidateHealthScoreDraft.cs     Copilot: checks and test-runs a draft, previews the rule score
+      CreateHealthScoreDraft.cs       Copilot: saves a validated draft as a Draft profile
+    Copilot/                          draft model, validator and FetchXML builder
+    Infrastructure/                   Dataverse connection, metadata cache, operators, request reader
     local.settings.example.json       settings template (names only, no secrets)
   webresources/
     reliance_healthdashboard.html     portfolio dashboard (profile-driven, any table)
     reliance_rulecondition.js         rule form script that pre-selects the source table
+    reliance_aihealthscorehome.html   landing page: Configure with AI, profiles, Review
+    reliance_reviewactivate.js        Review and activate dialog with downloadable report
+    reliance_profileform.js           profile form: locking, checklist refresh, Done command
+    reliance_profilechecklist.html    profile progress tracker; also a percentage bar control
+  copilot-studio/
+    agent/                            agent instructions and the confirm-and-create skill
+    connector/                        custom connector (OpenAPI) for the Copilot functions
+    samples/                          sample draft for testing
 docs/
-  architecture.md · scoring-engine.md · data-model.md · setup.md
+  architecture.md · scoring-engine.md · data-model.md · setup.md · copilot-agent.md
 ```
 
 ## Getting started
@@ -115,12 +132,16 @@ curl "http://localhost:7071/api/EvaluateHealthScoreProfile?profileId=<guid>&reco
 
 ## Roadmap
 
+- [x] Configure with AI: a Copilot Studio agent that drafts profiles for human review
+
 - [ ] Nightly batch scoring of every record on an Active profile
 - [ ] Limit the AI to a fixed adjustment range (e.g. ±15), so the rule score always drives the result
 - [ ] Optional recency decay per rule (a half-life in days)
 - [ ] Back-test against known churn and renewal outcomes to measure how well the score predicts them
 - [ ] Alerts when a record drops a risk level
 - [ ] Deploy the Function App from GitHub Actions
+- [ ] Copy an Active profile as a new Draft, and starter templates for the agent
+- [ ] Move the agent to a sign-in channel before production
 
 ## Author
 

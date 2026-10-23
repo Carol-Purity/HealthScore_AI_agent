@@ -1,0 +1,438 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Health Score Designer",
+    "description": "Read Dataverse metadata, validate, and create DRAFT health score configurations. Never activates a profile.",
+    "version": "1.0"
+  },
+  "host": "YOUR-FUNCTION-APP.azurewebsites.net",
+  "basePath": "/api",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "query",
+      "name": "code"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "paths": {
+    "/GetScoringMetadata": {
+      "get": {
+        "operationId": "GetScoringMetadata",
+        "summary": "Get scoring metadata",
+        "description": "Read-only. With only targetTable: lists tables that link to the target table and their relationship columns. With sourceTable as well: returns that table's relationship columns to the target, every column usable in a condition (with choice options), and the operators allowed per column type.",
+        "parameters": [
+          {
+            "name": "targetTable",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Logical name of the table being scored, e.g. account."
+          },
+          {
+            "name": "sourceTable",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Logical name of a related table to describe, e.g. incident."
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Optional text to filter tables (without sourceTable) or columns (with sourceTable)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metadata",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "targetTable": {
+                  "type": "string"
+                },
+                "targetDisplayName": {
+                  "type": "string",
+                  "x-nullable": true
+                },
+                "candidateCount": {
+                  "type": "integer"
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "hint": {
+                  "type": "string",
+                  "x-nullable": true
+                },
+                "candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "table": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      },
+                      "relationshipColumns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "sourceTable": {
+                  "type": "string"
+                },
+                "sourceDisplayName": {
+                  "type": "string"
+                },
+                "relationshipColumns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "column": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      },
+                      "pointsTo": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "columns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "column": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "description": "text, number, date, choice, boolean or lookup"
+                      },
+                      "options": {
+                        "type": "array",
+                        "x-nullable": true,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "integer"
+                            },
+                            "label": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "operatorsByType": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "notes": {
+                  "type": "string",
+                  "x-nullable": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ValidateHealthScoreDraft": {
+      "post": {
+        "operationId": "ValidateHealthScoreDraft",
+        "summary": "Validate a draft configuration",
+        "description": "Read-only. Checks a draft health score configuration against Dataverse and test-runs every rule. Optionally previews the score for a sample record. Writes nothing.",
+        "parameters": [
+          {
+            "name": "sampleRecordId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Optional GUID of a record in the target table, used to preview rule matches and the rule score (before the engine's AI review)."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "draftJson"
+              ],
+              "properties": {
+                "draftJson": {
+                  "type": "string",
+                  "description": "The complete draft configuration as a JSON string."
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validation result",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "isValid": {
+                  "type": "boolean"
+                },
+                "errorCount": {
+                  "type": "integer"
+                },
+                "warningCount": {
+                  "type": "integer"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Issue"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Issue"
+                  }
+                },
+                "sampleRecordName": {
+                  "type": "string",
+                  "x-nullable": true
+                },
+                "sampleScorePreview": {
+                  "type": "number",
+                  "x-nullable": true,
+                  "description": "Rule score for the sample record, before the engine's AI review."
+                },
+                "rules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "dataSource": {
+                        "type": "string"
+                      },
+                      "ruleName": {
+                        "type": "string"
+                      },
+                      "impact": {
+                        "type": "string",
+                        "description": "Positive, Negative or Neutral"
+                      },
+                      "condition": {
+                        "type": "string"
+                      },
+                      "pointsPerMatch": {
+                        "type": "number"
+                      },
+                      "weight": {
+                        "type": "number"
+                      },
+                      "fetchXml": {
+                        "type": "string"
+                      },
+                      "sampleMatches": {
+                        "type": "integer",
+                        "x-nullable": true
+                      },
+                      "samplePoints": {
+                        "type": "number",
+                        "x-nullable": true
+                      }
+                    }
+                  }
+                },
+                "summaryText": {
+                  "type": "string"
+                },
+                "previewText": {
+                  "type": "string"
+                },
+                "sampleHasNoHealthySignal": {
+                  "type": "boolean",
+                  "description": "True when no Positive rule matched the sample record, so its final score can't exceed 20."
+                },
+                "maxRuleScore": {
+                  "type": "number",
+                  "description": "Highest rule score this configuration can produce."
+                },
+                "dataSources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "dataSource": {
+                        "type": "string"
+                      },
+                      "weight": {
+                        "type": "number"
+                      },
+                      "hasPositiveRule": {
+                        "type": "boolean"
+                      },
+                      "positiveMatches": {
+                        "type": "integer",
+                        "x-nullable": true
+                      },
+                      "net": {
+                        "type": "number",
+                        "x-nullable": true
+                      },
+                      "contribution": {
+                        "type": "number",
+                        "x-nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/CreateHealthScoreDraft": {
+      "post": {
+        "operationId": "CreateHealthScoreDraft",
+        "summary": "Create draft configuration",
+        "description": "Creates the configuration in Dataverse (Profile, Data Sources, Rules) with Status = Draft, in one transaction. Only call after the admin has clearly said yes to the reviewed draft. Never activates the profile.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "draftJson"
+              ],
+              "properties": {
+                "draftJson": {
+                  "type": "string",
+                  "description": "The confirmed draft configuration as a JSON string."
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Created as Draft",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "created": {
+                  "type": "boolean"
+                },
+                "profileId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "recordsCreated": {
+                  "type": "integer"
+                },
+                "profileUrl": {
+                  "type": "string"
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Issue"
+                  }
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not created (validation errors)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "created": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "type": "string"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Issue"
+                  }
+                },
+                "summaryText": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Issue": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

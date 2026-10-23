@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Profile checklist</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 14px;
+            color: #242424;
+            background: transparent;
+        }
+
+        .wrap {
+            width: 100%;
+            padding: 4px 2px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* =====================================================
+           PROGRESS (no own border: the form section is the card)
+           ===================================================== */
+
+        .progress-card {
+            width: 100%;
+            padding: 4px 0 2px;
+        }
+
+        /* =====================================================
+           STEPPER
+           ===================================================== */
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-height: 38px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            min-width: max-content;
+        }
+
+        .step-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: none;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* Completed */
+        .step.done .step-circle {
+            background: #e8f5e9;
+            color: #107c10;
+        }
+
+        /* Partially configured */
+        .step.partial .step-circle {
+            background: #fff4ce;
+            color: #8a6d00;
+        }
+
+        /* Not configured */
+        .step.todo .step-circle {
+            background: #f3f2f1;
+            color: #797775;
+            border: 1px solid #d2d0ce;
+        }
+
+        .step-content {
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        .step-label {
+            color: #242424;
+            font-weight: 600;
+        }
+
+        .step.todo .step-label {
+            color: #616161;
+        }
+
+        .step-count {
+            color: #616161;
+            margin-left: 4px;
+            font-size: 13px;
+        }
+
+        .connector {
+            height: 1px;
+            flex: 1;
+            min-width: 22px;
+            margin: 0 10px;
+            background: #d2d0ce;
+        }
+
+        .connector.complete {
+            background: #107c10;
+        }
+
+        /* =====================================================
+           FOOTER
+           ===================================================== */
+
+        .progress-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #edebe9;
+        }
+
+        .status-message {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #424242;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .status-message.ready {
+            color: #107c10;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #c19c00;
+            flex: none;
+        }
+
+        .status-message.ready .status-dot {
+            background: #107c10;
+        }
+
+        .status-message.active .status-dot {
+            background: #0f6cbd;
+        }
+
+        .footer-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: none;
+        }
+
+        .refresh-button {
+            border: 0;
+            background: transparent;
+            color: #0f6cbd;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .refresh-button:hover {
+            background: #f3f2f1;
+            text-decoration: underline;
+        }
+
+        .refresh-button:focus-visible {
+            outline: 2px solid #0f6cbd;
+            outline-offset: 2px;
+        }
+
+        /* =====================================================
+           REVIEW BUTTON
+           ===================================================== */
+
+        .review-button {
+            border: 0;
+            border-radius: 6px;
+            background: #0f6cbd;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 7px 15px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .review-button:hover {
+            background: #115ea3;
+        }
+
+        .review-button:active {
+            background: #0c4f8a;
+        }
+
+        .review-button:focus-visible {
+            outline: 2px solid #0f6cbd;
+            outline-offset: 2px;
+        }
+
+        /* =====================================================
+           NEW PROFILE
+           ===================================================== */
+
+        .getting-started {
+            width: 100%;
+            padding: 4px 0 2px;
+        }
+
+        .getting-started-title {
+            margin: 0 0 4px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #242424;
+        }
+
+        .getting-started-description {
+            margin: 0 0 12px;
+            color: #616161;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .start-steps {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .start-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #424242;
+            font-size: 13px;
+        }
+
+        .start-number {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #f3f2f1;
+            color: #616161;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* =====================================================
+           ERROR
+           ===================================================== */
+
+        .error-card {
+            border: 1px solid #f1b8b8;
+            border-radius: 8px;
+            background: #fff8f8;
+            padding: 12px 14px;
+            color: #a4262c;
+        }
+
+        .error-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .link-button {
+            border: 0;
+            background: transparent;
+            color: #0f6cbd;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .link-button:hover {
+            text-decoration: underline;
+        }
+
+        .loading,
+        .muted {
+            color: #616161;
+            padding: 5px 2px;
+        }
+
+        /* =====================================================
+           PERCENTAGE BAR MODE (data: field=<text column>)
+           ===================================================== */
+
+        .pct {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 6px 2px;
+        }
+
+        .pct-track {
+            position: relative;
+            flex: 1;
+            height: 26px;
+            border-radius: 13px;
+            background: #e1dfdd;
+            overflow: hidden;
+        }
+
+        .pct-fill {
+            position: absolute;
+            inset: 0 auto 0 0;
+            border-radius: 13px;
+            transition: width 0.3s ease;
+        }
+
+        /* Two copies of the label: dark over the track, white over the fill.
+           The white one is clipped to the filled width, so the text stays
+           readable wherever the fill ends. */
+        .pct-label {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #424242;
+            pointer-events: none;
+        }
+
+        .pct-label.on-fill {
+            color: #ffffff;
+        }
+
+        .pct-low  { background: #d13438; }
+        .pct-mid  { background: #c19c00; }
+        .pct-high { background: #107c10; }
+
+        .pct-empty {
+            color: #616161;
+            font-size: 13px;
+            padding: 6px 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .pct-fill { transition: none; }
+        }
+
+        /* =====================================================
+           SMALL FORM FACTORS
+           ===================================================== */
+
+        @media (max-width: 700px) {
+
+            .stepper {
+                overflow-x: auto;
+                padding-bottom: 4px;
+            }
+
+            .progress-footer {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="wrap" id="app">
+    <div class="loading">Loading…</div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var LANDING_PAGE = "reliance_AIHealthScoreHome.html";
+
+    var xrm = window.parent && window.parent.Xrm;
+
+    var params = new URLSearchParams(window.location.search);
+
+    var profileId = cleanId(params.get("id"));
+
+    var app =
+        document.getElementById("app");
+
+    var loading = false;
+
+
+    /*
+     * PERCENTAGE BAR MODE
+     * Set the web resource's "Custom parameter (data)" on the form to:
+     *     field=<text column logical name>
+     * Optional:  &color=#0f6cbd   one colour instead of red / amber / green
+     *            &low=34&high=67  where the colour bands change
+     * Without "field", this page is the profile checklist as before.
+     */
+    var config = new URLSearchParams(params.get("data") || "");
+
+    if (config.get("field")) {
+        runPercentBar(config);
+        return;
+    }
+
+
+    /* =====================================================
+       HELPERS
+       ===================================================== */
+
+    function cleanId(id) {
+        return String(id || "")
+            .replace(/[{}]/g, "")
+            .toLowerCase();
+    }
+
+
+    function esc(s) {
+        return String(
+            s === null || s === undefined ? "" : s
+        ).replace(/[&<>"']/g, function (c) {
+
+            return {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[c];
+
+        });
+    }
+
+
+    function fetchUrl(xml) {
+        return "?fetchXml=" +
+            encodeURIComponent(xml);
+    }
+
+
+    /* =====================================================
+       LOAD DATA
+       ===================================================== */
+
+    async function load() {
+
+        if (loading) {
+            return;
+        }
+
+        loading = true;
+
+        try {
+
+            if (!xrm) {
+
+                render({
+                    message:
+                        "Dynamics context isn't available."
+                });
+
+                return;
+            }
+
+
+            /*
+             * NEW / UNSAVED PROFILE
+             */
+            if (!profileId) {
+
+                render({
+                    unsaved: true
+                });
+
+                return;
+            }
+
+
+            var api = xrm.WebApi;
+
+
+            /*
+             * PROFILE
+             */
+            var profile =
+                await api.retrieveRecord(
+                    "reliance_healthscoreprofile",
+                    profileId,
+                    "?$select=reliance_profilename,reliance_targettable,reliance_status"
+                );
+
+
+            /*
+             * DATA SOURCES
+             */
+            var ds =
+                await api.retrieveMultipleRecords(
+                    "reliance_healthscoredatasource",
+                    "?$select=reliance_healthscoredatasourceid,reliance_datasourcename,reliance_weight" +
+                    "&$filter=_reliance_healthscoreprofile_value eq " +
+                    profileId +
+                    " and reliance_enabled eq true"
+                );
+
+
+            /*
+             * RULES (they belong directly to a data source, like in the engine)
+             */
+            var rules =
+                await api.retrieveMultipleRecords(
+                    "reliance_healthscorerule",
+                    fetchUrl(
+                        '<fetch>' +
+                        '<entity name="reliance_healthscorerule">' +
+
+                        '<attribute name="reliance_healthscoreruleid"/>' +
+                        '<attribute name="reliance_datasourcelookup"/>' +
+                        '<attribute name="reliance_impact"/>' +
+
+                        '<filter>' +
+                        '<condition attribute="reliance_enabled" operator="eq" value="1"/>' +
+                        '</filter>' +
+
+                        '<link-entity name="reliance_healthscoredatasource"' +
+                        ' from="reliance_healthscoredatasourceid"' +
+                        ' to="reliance_datasourcelookup"' +
+                        ' link-type="inner">' +
+
+                        '<filter>' +
+
+                        '<condition attribute="reliance_healthscoreprofile"' +
+                        ' operator="eq" value="' +
+                        profileId +
+                        '"/>' +
+
+                        '<condition attribute="reliance_enabled"' +
+                        ' operator="eq" value="1"/>' +
+
+                        '</filter>' +
+
+                        '</link-entity>' +
+
+                        '</entity>' +
+                        '</fetch>'
+                    )
+                );
+
+
+            render(
+                summarize(
+                    profile,
+                    ds.entities,
+                    rules.entities
+                )
+            );
+
+        }
+        catch (e) {
+
+            render({
+                message:
+                    "Couldn't load the checklist. " +
+                    (
+                        e && e.message
+                            ? e.message
+                            : ""
+                    )
+            });
+
+        }
+        finally {
+
+            loading = false;
+        }
+    }
+
+
+    /* =====================================================
+       SUMMARIZE
+       ===================================================== */
+
+    function summarize(
+        profile,
+        dsList,
+        ruleList
+    ) {
+
+        /*
+         * Group rules by data source, and note which sources score.
+         * Impact: 1 Positive, 2 Negative, 3 Neutral (evidence only).
+         */
+        var bySource = {};
+
+        ruleList.forEach(function (r) {
+
+            var key = r._reliance_datasourcelookup_value;
+
+            bySource[key] = bySource[key] || { count: 0, scoring: false };
+            bySource[key].count++;
+
+            if (r.reliance_impact === 1 || r.reliance_impact === 2) {
+                bySource[key].scoring = true;
+            }
+
+        });
+
+
+        var dsCount =
+            dsList.length;
+
+        var ruleCount =
+            ruleList.length;
+
+        var dsWithoutRules =
+            dsList.filter(function (d) {
+                return !bySource[d.reliance_healthscoredatasourceid];
+            }).length;
+
+
+        /*
+         * Weights only matter for sources that score. A source with only
+         * Neutral rules is awareness only, so it needs no weight.
+         */
+        var scoringSources =
+            dsList.filter(function (d) {
+                var info = bySource[d.reliance_healthscoredatasourceid];
+                return info && info.scoring;
+            });
+
+        var missingWeight =
+            scoringSources.filter(function (d) {
+                return !(Number(d.reliance_weight) > 0);
+            }).length;
+
+        var totalWeight =
+            scoringSources.reduce(function (sum, d) {
+                return sum + (Number(d.reliance_weight) || 0);
+            }, 0);
+
+        var noImpact =
+            ruleList.filter(function (r) {
+                return !r.reliance_impact;
+            }).length;
+
+        var hasPositive =
+            ruleList.some(function (r) {
+                return r.reliance_impact === 1;
+            });
+
+
+        var detailsDone =
+            !!profile.reliance_profilename &&
+            !!profile.reliance_targettable;
+
+        var sourcesOk =
+            dsCount > 0 &&
+            missingWeight === 0 &&
+            totalWeight <= 100;
+
+        var rulesOk =
+            ruleCount > 0 &&
+            dsWithoutRules === 0 &&
+            noImpact === 0;
+
+        var ready =
+            detailsDone &&
+            sourcesOk &&
+            rulesOk;
+
+
+        /*
+         * The one specific thing still missing, in order.
+         */
+        var next = "";
+
+        if (!detailsDone) {
+            next = "Add a name and target table, then save.";
+        }
+        else if (dsCount === 0) {
+            next = "Add a data source in the Data Sources section.";
+        }
+        else if (ruleCount === 0) {
+            next = "Open each data source and add at least one rule.";
+        }
+        else if (dsWithoutRules > 0) {
+            next = dsWithoutRules + " of " + dsCount +
+                " data sources " + (dsWithoutRules === 1 ? "has" : "have") +
+                " no rules yet. A data source without rules can't affect the score.";
+        }
+        else if (noImpact > 0) {
+            next = noImpact + " rule" + (noImpact === 1 ? " has" : "s have") +
+                " no Impact set. Choose Positive, Negative or Neutral.";
+        }
+        else if (missingWeight > 0) {
+            next = missingWeight + " scoring data source" + (missingWeight === 1 ? " has" : "s have") +
+                " no weight. Without one it can't change the score.";
+        }
+        else if (totalWeight > 100) {
+            next = "The weights add up to " + totalWeight +
+                ". They share the 0–100 score, so reduce them by " + (totalWeight - 100) + ".";
+        }
+
+
+        /*
+         * Not a blocker, but worth knowing once everything else is done.
+         */
+        var note = "";
+
+        if (ready && !hasPositive) {
+            note = "Ready, but there are no Positive rules, so the score can only ever be 0.";
+        }
+
+
+        return {
+
+            active:
+                profile.reliance_status === 2,
+
+            ready:
+                ready,
+
+            next:
+                next,
+
+            note:
+                note,
+
+            steps: [
+
+                {
+                    label: "Details",
+                    count: 0,
+                    state:
+                        detailsDone
+                            ? "done"
+                            : "todo"
+                },
+
+                {
+                    label: "Data sources",
+                    count: dsCount,
+                    state:
+                        dsCount === 0
+                            ? "todo"
+                            : sourcesOk
+                                ? "done"
+                                : "partial"
+                },
+
+                {
+                    label: "Rules",
+                    count: ruleCount,
+                    state:
+                        ruleCount === 0
+                            ? "todo"
+                            : rulesOk
+                                ? "done"
+                                : "partial"
+                }
+
+            ]
+        };
+    }
+
+
+    /* =====================================================
+       REVIEW AND ACTIVATE (same destination as the Done command)
+       ===================================================== */
+
+    function openReview() {
+
+        if (!(xrm && xrm.Navigation)) {
+            return;
+        }
+
+        xrm.Navigation.navigateTo(
+            {
+                pageType: "webresource",
+                webresourceName: LANDING_PAGE,
+                data: "profileId=" + profileId
+            },
+            {
+                target: 1
+            }
+        );
+    }
+
+
+    /* =====================================================
+       RENDER
+       ===================================================== */
+
+    var STATE_TEXT = {
+        done: "complete",
+        partial: "needs attention",
+        todo: "not started"
+    };
+
+
+    function render(model) {
+
+        var h = "";
+
+
+        /*
+         * NEW PROFILE
+         */
+        if (model.unsaved) {
+
+            h +=
+                '<div class="getting-started">' +
+
+                    '<div class="getting-started-title">' +
+                        'Get started with your Health Score' +
+                    '</div>' +
+
+                    '<p class="getting-started-description">' +
+                        'Enter the profile details below and save to begin configuring your health score.' +
+                    '</p>' +
+
+                    '<div class="start-steps">' +
+
+                        '<div class="start-step">' +
+                            '<span class="start-number">1</span>' +
+                            '<span>Enter profile details</span>' +
+                        '</div>' +
+
+                        '<div class="start-step">' +
+                            '<span class="start-number">2</span>' +
+                            '<span>Save the profile</span>' +
+                        '</div>' +
+
+                        '<div class="start-step">' +
+                            '<span class="start-number">3</span>' +
+                            '<span>Configure scoring</span>' +
+                        '</div>' +
+
+                    '</div>' +
+
+                '</div>';
+
+            app.innerHTML = h;
+
+            return;
+        }
+
+
+        /*
+         * ERROR
+         */
+        if (model.message) {
+
+            h +=
+                '<div class="error-card">' +
+
+                    '<div class="error-row">' +
+
+                        '<span>' +
+                            esc(model.message) +
+                        '</span>' +
+
+                        '<button ' +
+                            'type="button" ' +
+                            'class="link-button" ' +
+                            'id="refresh">' +
+                            'Try again' +
+                        '</button>' +
+
+                    '</div>' +
+
+                '</div>';
+
+            app.innerHTML = h;
+
+            var errorButton =
+                document.getElementById("refresh");
+
+            if (errorButton) {
+                errorButton.addEventListener(
+                    "click",
+                    function () { load(); }
+                );
+            }
+
+            return;
+        }
+
+
+        /*
+         * SAVED PROFILE
+         */
+
+        h +=
+            '<div class="progress-card">' +
+
+                '<div class="stepper">';
+
+
+        model.steps.forEach(function (step, index) {
+
+            h +=
+                '<div class="step ' +
+                    step.state +
+                '">' +
+
+                    '<span class="step-circle" aria-hidden="true">' +
+
+                        (
+                            step.state === "done"
+                                ? "✓"
+                                : step.state === "partial"
+                                    ? "!"
+                                    : index + 1
+                        ) +
+
+                    '</span>' +
+
+                    '<span class="step-content">' +
+
+                        '<span class="step-label">' +
+                            esc(step.label) +
+                        '</span>';
+
+
+            if (step.count > 0) {
+
+                h +=
+                    '<span class="step-count">' +
+                        esc(step.count) +
+                    '</span>';
+
+            }
+
+
+            h +=
+                        '<span class="sr-only">, ' +
+                            STATE_TEXT[step.state] +
+                        '</span>' +
+
+                    '</span>' +
+
+                '</div>';
+
+
+            if (index <
+                model.steps.length - 1) {
+
+                h +=
+                    '<span class="connector ' +
+                    (
+                        step.state === "done"
+                            ? "complete"
+                            : ""
+                    ) +
+                    '"></span>';
+            }
+
+        });
+
+
+        var statusClass =
+            model.active
+                ? "active"
+                : model.ready
+                    ? "ready"
+                    : "";
+
+
+        var statusText =
+            model.active
+                ? "This profile is active and locked. To change it, deactivate it from the landing page."
+                : model.ready
+                    ? (model.note || "Ready to review and activate.")
+                    : "Next: " + model.next;
+
+
+        h +=
+                '</div>' +
+
+
+                '<div class="progress-footer">' +
+
+                    '<div class="status-message ' +
+                        statusClass +
+                    '" role="status">' +
+
+                        '<span class="status-dot"></span>' +
+
+                        '<span>' +
+                            esc(statusText) +
+                        '</span>' +
+
+                    '</div>' +
+
+                    '<div class="footer-actions">' +
+
+                        '<button ' +
+                            'type="button" ' +
+                            'class="refresh-button" ' +
+                            'id="refresh">' +
+                            '↻ Refresh' +
+                        '</button>';
+
+
+        /*
+         * Shown only when the profile is complete and not yet active.
+         * Does the same as the Done command: opens the landing page
+         * with the Review and activate dialog for this profile.
+         */
+        if (model.ready && !model.active) {
+
+            h +=
+                        '<button ' +
+                            'type="button" ' +
+                            'class="review-button" ' +
+                            'id="review">' +
+                            'Review and activate' +
+                        '</button>';
+        }
+
+
+        h +=
+                    '</div>' +
+
+                '</div>' +
+
+            '</div>';
+
+
+        app.innerHTML = h;
+
+
+        var refresh =
+            document.getElementById("refresh");
+
+        if (refresh) {
+
+            refresh.addEventListener(
+                "click",
+                function () { load(); }
+            );
+
+        }
+
+
+        var review =
+            document.getElementById("review");
+
+        if (review) {
+
+            review.addEventListener(
+                "click",
+                openReview
+            );
+
+        }
+    }
+
+
+    /* =====================================================
+       PERCENTAGE BAR
+       ===================================================== */
+
+    function runPercentBar(cfg) {
+
+        var field = cfg.get("field").trim().toLowerCase();
+        var single = cfg.get("color");
+        var low = Number(cfg.get("low")) || 34;
+        var high = Number(cfg.get("high")) || 67;
+
+        // Accepts "20", "20%", "20 %", "20.5" and "0.2" written as a fraction is NOT assumed.
+        function parse(text) {
+            if (text === null || text === undefined) return null;
+            var m = String(text).trim().match(/^(-?\d+(?:[.,]\d+)?)\s*%?$/);
+            if (!m) return NaN;
+            var n = Number(m[1].replace(",", "."));
+            return Math.max(0, Math.min(100, n));
+        }
+
+        function draw(text) {
+
+            var value = parse(text);
+
+            if (value === null || text === "") {
+                app.innerHTML = '<div class="pct-empty">No value</div>';
+                return;
+            }
+
+            if (isNaN(value)) {
+                app.innerHTML = '<div class="pct-empty">"' + esc(text) + '" isn\'t a percentage between 0 and 100.</div>';
+                return;
+            }
+
+            var shown = Math.round(value) + " %";
+            var band = value < low ? "pct-low" : value < high ? "pct-mid" : "pct-high";
+            var fillStyle = "width:" + value + "%;" + (single ? "background:" + esc(single) + ";" : "");
+
+            app.innerHTML =
+                '<div class="pct">' +
+                    '<div class="pct-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(value) + '">' +
+                        '<div class="pct-fill ' + (single ? "" : band) + '" style="' + fillStyle + '"></div>' +
+                        '<div class="pct-label">' + shown + '</div>' +
+                        '<div class="pct-label on-fill" style="clip-path: inset(0 ' + (100 - value) + '% 0 0);">' + shown + '</div>' +
+                    '</div>' +
+                '</div>';
+        }
+
+        // Live mode: read the field on the open form and redraw as it changes (before saving).
+        var page = xrm && xrm.Page;
+        var attribute = null;
+
+        try {
+            attribute = page && page.getAttribute ? page.getAttribute(field) : null;
+        } catch (e) {
+            attribute = null;
+        }
+
+        if (attribute) {
+            draw(attribute.getValue());
+            attribute.addOnChange(function () { draw(attribute.getValue()); });
+            return;
+        }
+
+        // Fallback: the field isn't on the form, so read the saved value.
+        var entity = params.get("typename");
+
+        if (!xrm || !entity || !profileId) {
+            app.innerHTML = '<div class="pct-empty">Add the field "' + esc(field) + '" to the form, or tick "Pass record object-type code and unique identifier as parameters".</div>';
+            return;
+        }
+
+        xrm.WebApi.retrieveRecord(entity, profileId, "?$select=" + field)
+            .then(function (record) { draw(record[field]); })
+            .catch(function (e) {
+                app.innerHTML = '<div class="pct-empty">Couldn\'t read "' + esc(field) + '". ' + esc(e && e.message ? e.message : "") + '</div>';
+            });
+    }
+
+
+    /* =====================================================
+       REFRESH WHEN RETURNING TO FORM
+       ===================================================== */
+
+    document.addEventListener(
+        "visibilitychange",
+        function () {
+
+            if (
+                document.visibilityState ===
+                "visible"
+            ) {
+
+                load();
+
+            }
+
+        }
+    );
+
+
+    /*
+     * Called by reliance_ProfileForm.js after a save or a subgrid change.
+     * After the first save of a new profile, the form passes the new id,
+     * because this page was opened before the profile existed.
+     */
+    window.refreshChecklist = function (id) {
+
+        if (typeof id === "string" && id) {
+            profileId = cleanId(id);
+        }
+
+        load();
+    };
+
+
+    load();
+
+})();
+</script>
+
+</body>
+</html>
