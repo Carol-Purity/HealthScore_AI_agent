@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Score Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground: #F3F5F8; --card: #FFFFFF; --line: #E2E6EC; --line-soft: #EEF1F5;
+    --ink: #16202E; --ink-2: #3D4756; --muted: #5B6675; --field: #C9D0DA;
+    --accent: #0B5CD6; --accent-dark: #0B4FB8; --accent-tint: #EAF1FD;
+    --good: #17744A; --bad: #B42318;
+    --low: #1F9D63; --medium: #E2A400; --high: #E8590C; --critical: #B42318;
+    --mono: 'IBM Plex Mono', Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; font-size: 14px; }
+  a { color: var(--accent); } a:hover { color: #08449E; }
+  button, input, select { font-family: inherit; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  header { background: var(--card); border-bottom: 1px solid var(--line); padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-right: auto; align-self: center; }
+  .brand-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 12px; color: var(--muted); }
+  .field { display: flex; flex-direction: column; gap: 2px; }
+  .field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  select, input[type=search] { font-size: 14px; padding: 0 12px; min-height: 40px; border: 1px solid var(--field); border-radius: 8px; background: #fff; color: var(--ink); }
+  select { min-width: 240px; }
+  input[type=search] { width: 220px; }
+  .toggle { display: flex; border: 1px solid var(--field); border-radius: 8px; overflow: hidden; }
+  .toggle button { font-size: 14px; padding: 0 16px; min-height: 40px; border: 0; background: #fff; color: var(--ink-2); cursor: pointer; }
+  .toggle button[aria-pressed=true] { background: var(--accent); color: #fff; font-weight: 600; }
+  .btn { font-size: 14px; font-weight: 600; padding: 0 18px; min-height: 40px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+  .btn:disabled { opacity: 0.6; cursor: wait; }
+  .btn-outline { font-size: 12px; font-weight: 600; padding: 0 12px; min-height: 32px; border: 1px solid var(--accent); border-radius: 6px; background: #fff; color: var(--accent-dark); cursor: pointer; }
+  .link-btn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: underline; }
+
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 24px 32px 40px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  main { flex: 999 1 720px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+  aside { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  h2 { margin: 0; font-size: 15px; font-weight: 600; }
+  .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+  .grid-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .kpi-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .kpi-row { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .kpi-value { font-family: var(--mono); font-size: 32px; font-weight: 600; }
+  .up { color: var(--good); font-weight: 600; font-size: 13px; }
+  .down { color: var(--bad); font-weight: 600; font-size: 13px; }
+  .meter { height: 6px; background: #E8ECF1; border-radius: 3px; margin-top: 10px; }
+  .meter > div { height: 6px; background: var(--accent); border-radius: 3px; }
+
+  .legend { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+  .legend div { display: flex; align-items: center; gap: 8px; }
+  .legend .sw { width: 10px; height: 10px; border-radius: 3px; }
+  .legend .n { color: var(--muted); margin-left: auto; padding-left: 12px; font-family: var(--mono); }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 13px; padding: 0 14px; min-height: 36px; border: 1px solid var(--field); border-radius: 18px; background: #fff; color: var(--ink-2); cursor: pointer; }
+  .chip[aria-pressed=true] { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dark); font-weight: 600; }
+  .table-box { overflow-x: auto; margin-top: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 780px; }
+  th { text-align: left; color: var(--muted); font-size: 12px; font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  td { padding: 12px; border-bottom: 1px solid var(--line-soft); color: var(--ink-2); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.name { font-weight: 600; }
+  td.score { font-family: var(--mono); font-weight: 600; color: var(--ink); }
+  td.reason { max-width: 340px; }
+  .badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 10px; white-space: nowrap; }
+  .badge.low { background: #E3F4EC; color: #11613D; }
+  .badge.medium { background: #FBF1D6; color: #7A5600; }
+  .badge.high { background: #FDEDE3; color: #9A3A07; }
+  .badge.critical { background: #FDE8E7; color: #8F1B13; }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 13px; color: var(--muted); gap: 12px; flex-wrap: wrap; }
+
+  .panel-blue { background: var(--accent); color: #fff; border-radius: 12px; padding: 20px; }
+  .panel-blue .eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
+  .panel-blue .title { font-size: 20px; font-weight: 700; margin-top: 6px; }
+  .panel-blue .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+  .panel-blue .stat { background: rgba(255,255,255,0.14); border-radius: 8px; padding: 10px; font-size: 12px; }
+  .panel-blue .stat b { display: block; font-family: var(--mono); font-size: 20px; font-weight: 600; }
+  .weights { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; font-size: 13px; }
+  .weights div { display: flex; align-items: center; gap: 10px; }
+  .weights .bar { flex: 1; height: 6px; background: rgba(255,255,255,0.25); border-radius: 3px; }
+  .weights .bar i { display: block; height: 6px; background: #fff; border-radius: 3px; }
+  .list-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+  .list-row:last-child { border-bottom: 0; }
+  .list-row .grow { margin-right: auto; min-width: 0; }
+  .mono { font-family: var(--mono); }
+  .action { background: #F6F8FB; border-radius: 10px; padding: 12px 14px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 16px 0; }
+  .banner { margin: 16px 32px 0; padding: 12px 16px; border-radius: 8px; font-size: 13px; }
+  .banner.info { background: var(--accent-tint); color: var(--accent-dark); }
+  .banner.error { background: #FDE8E7; color: #8F1B13; }
+  .skeleton { color: var(--muted); }
+  @media (max-width: 640px) {
+    header, .wrap { padding-left: 16px; padding-right: 16px; }
+    select, input[type=search] { width: 100%; min-width: 0; }
+    .field { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#0B5CD6"/><path d="M6 15h4l2-5 4 9 2-4h4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div>
+      <div class="brand-title">Health Score Dashboard</div>
+      <div class="brand-sub" id="lastScored">Loading…</div>
+    </div>
+  </div>
+  <div class="field">
+    <label for="profile">Profile</label>
+    <select id="profile"></select>
+  </div>
+  <div class="toggle" role="group" aria-label="Records shown">
+    <button type="button" id="mineBtn" aria-pressed="false">My records</button>
+    <button type="button" id="allBtn" aria-pressed="true">All records</button>
+  </div>
+  <div class="field">
+    <label for="search" class="sr">Search</label>
+    <input id="search" type="search" placeholder="Search">
+  </div>
+  <button type="button" class="btn" id="refreshBtn">Refresh</button>
+</header>
+<div id="banner"></div>
+
+<div class="wrap">
+  <main>
+    <section class="grid-kpi" aria-label="Key figures" id="kpis"></section>
+
+    <section class="grid-charts" aria-label="Charts">
+      <div class="card"><h2>Risk level</h2><div class="sub" id="riskSub">Latest score per record</div><div id="riskChart" style="margin-top:16px"></div></div>
+      <div class="card"><h2>Average health, last 8 weeks</h2><div class="sub" id="trendSub"></div><div id="trendChart" style="margin-top:12px"></div></div>
+      <div class="card"><h2>Score distribution</h2><div class="sub">Records per score band</div><div id="bandChart" style="margin-top:12px"></div></div>
+    </section>
+
+    <section class="card" aria-label="Records needing attention">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+        <div style="margin-right:auto">
+          <h2 id="tableTitle">Records needing attention</h2>
+          <div class="sub">Lowest scores first · click a name to open the record</div>
+        </div>
+        <div class="chips" role="group" aria-label="Filter">
+          <button type="button" class="chip" data-filter="atrisk" aria-pressed="true">At risk</button>
+          <button type="button" class="chip" data-filter="declining" aria-pressed="false">Declining</button>
+          <button type="button" class="chip" data-filter="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <div class="table-box">
+        <table>
+          <thead><tr><th id="colName">Record</th><th>Owner</th><th>Score</th><th>Risk</th><th>Change</th><th>Why</th><th>Scored</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="7" class="skeleton">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="foot"><span id="showing"></span><button type="button" class="link-btn" id="viewAll">View all</button></div>
+    </section>
+  </main>
+
+  <aside>
+    <section class="panel-blue" aria-label="Profile summary" id="profilePanel"></section>
+    <section class="card" aria-label="Biggest declines"><h2>Biggest declines</h2><div id="declines" style="margin-top:10px"></div></section>
+    <section class="card" aria-label="Suggested next actions"><h2>Suggested next actions</h2><div id="actions" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"></div></section>
+    <section class="card" aria-label="Recent scores"><h2>Recent scores</h2><div id="recent" style="margin-top:10px"></div></section>
+  </aside>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------------------------------------
+  // Configuration
+  // ---------------------------------------------------------------------------------------------
+  var CONFIG = {
+    views: {                                   // system views on Health Score Result
+      atrisk:    '037edc4b-69cc-f111-a05d-70a8a557972a',
+      declining: '2897fe4a-6acc-f111-a05d-000d3a470299',
+      all:       'c8d41c29-6bcc-f111-a05d-7c1e524df82d'
+    },
+    topRows: 10,                               // rows in the attention table
+    activeStatus: 2                            // reliance_status value for Active profiles
+  };
+
+  var RESULT = 'reliance_healthscoreresult';
+  var RISK = { 1: ['Low', 'low'], 2: ['Medium', 'medium'], 3: ['High', 'high'], 4: ['Critical', 'critical'] };
+  var FILTERS = {
+    atrisk:    '<condition attribute="reliance_risklevel" operator="in"><value>3</value><value>4</value></condition>',
+    declining: '<condition attribute="reliance_trend" operator="eq" value="3"/>',
+    all:       ''
+  };
+  var BANDS = [[0, 19], [20, 39], [40, 59], [60, 79], [80, 100]];
+  var BAND_COLORS = ['#B42318', '#E8590C', '#E2A400', '#1F9D63', '#1F9D63'];
+
+  // ---------------------------------------------------------------------------------------------
+  // Dynamics context (the page runs inside a dashboard or as a full page). Outside Dynamics it
+  // shows sample data, so the file can be previewed in a browser.
+  // ---------------------------------------------------------------------------------------------
+  function findXrm() {
+    try { if (window.Xrm && window.Xrm.WebApi) return window.Xrm; } catch (e) {}
+    try { if (window.parent && window.parent.Xrm && window.parent.Xrm.WebApi) return window.parent.Xrm; } catch (e) {}
+    try { if (window.top && window.top.Xrm && window.top.Xrm.WebApi) return window.top.Xrm; } catch (e) {}
+    return null;
+  }
+  var X = findXrm();
+  var DEMO = !X;
+
+  var state = { profiles: [], profile: null, mine: false, filter: 'atrisk', search: '', labels: { singular: 'Record', plural: 'Records' } };
+
+  // ---------------------------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------------------------
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function xmlEsc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]; }); }
+  function fmt(n) { return (n == null || isNaN(n)) ? '–' : Number(n).toLocaleString(); }
+  function guid(s) { return String(s || '').replace(/[{}]/g, '').toLowerCase(); }
+  function ago(d) {
+    if (!d) return '';
+    var mins = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000));
+    if (mins < 60) return mins + 'm ago';
+    if (mins < 1440) return Math.round(mins / 60) + 'h ago';
+    return Math.round(mins / 1440) + 'd ago';
+  }
+  function label(v) { return v && typeof v === 'object' ? (v.UserLocalizedLabel && v.UserLocalizedLabel.Label) : v; }
+  function tableName(v) {                       // "Opportunity (opportunity)" -> "opportunity"
+    if (!v) return null;
+    var m = /\(([^()]+)\)\s*$/.exec(v);
+    return (m ? m[1] : v).trim().toLowerCase();
+  }
+  function displayPart(v) { return v ? String(v).replace(/\s*\([^()]+\)\s*$/, '') : ''; }
+  function banner(kind, text) { $('banner').innerHTML = text ? '<div class="banner ' + kind + '">' + esc(text) + '</div>' : ''; }
+
+  // ---------------------------------------------------------------------------------------------
+  // Live data (Dataverse). Counts and averages are aggregate queries, so they stay fast at any size.
+  // ---------------------------------------------------------------------------------------------
+  function fetch(entity, xml) {
+    return X.WebApi.retrieveMultipleRecords(entity, '?fetchXml=' + encodeURIComponent(xml)).then(function (r) { return r.entities; });
+  }
+  function scope(extra, latestOnly) {
+    return '<condition attribute="reliance_healthscoreprofile" operator="eq" value="' + state.profile.id + '"/>' +
+      (latestOnly === false ? '' : '<condition attribute="reliance_islatest" operator="eq" value="1"/>') +
+      (state.mine ? '<condition attribute="ownerid" operator="eq-userid"/>' : '') + (extra || '');
+  }
+  function searchCond() {
+    return state.search ? '<condition attribute="reliance_recordname" operator="like" value="%' + xmlEsc(state.search) + '%"/>' : '';
+  }
+  var COLS = ['reliance_recordid', 'reliance_recordname', 'reliance_recordlink', 'reliance_finalscore', 'reliance_risklevel',
+              'reliance_trend', 'reliance_reason', 'reliance_nextaction', 'reliance_scoredon', 'ownerid'];
+  function toRow(e) {
+    return {
+      recordId: guid(e.reliance_recordid), name: e.reliance_recordname || '(no name)', link: e.reliance_recordlink,
+      score: e.reliance_finalscore, risk: e.reliance_risklevel, trend: e.reliance_trend,
+      reason: e.reliance_reason, next: e.reliance_nextaction, scoredOn: e.reliance_scoredon,
+      owner: e['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || ''
+    };
+  }
+
+  var live = {
+    profiles: function () {
+      return X.WebApi.retrieveMultipleRecords('reliance_healthscoreprofile',
+        '?$select=reliance_profilename,reliance_targettable,reliance_status,reliance_aienabled&$orderby=reliance_profilename')
+        .then(function (r) {
+          return r.entities.map(function (p) {
+            return { id: guid(p.reliance_healthscoreprofileid), name: p.reliance_profilename, table: tableName(p.reliance_targettable),
+                     active: p.reliance_status === CONFIG.activeStatus, ai: p.reliance_aienabled !== false };
+          });
+        });
+    },
+    labels: function (table) {
+      return X.Utility.getEntityMetadata(table, []).then(function (m) {
+        return { singular: label(m.DisplayName) || table, plural: label(m.DisplayCollectionName) || label(m.DisplayName) || table };
+      }).catch(function () { return { singular: table, plural: table }; });
+    },
+    summary: function () {
+      return X.WebApi.retrieveMultipleRecords('reliance_healthscoredatasource',
+        '?$select=reliance_datasourcename,reliance_weight&$filter=_reliance_healthscoreprofile_value eq ' + state.profile.id + ' and reliance_enabled eq true')
+        .then(function (r) {
+          var sources = r.entities.map(function (d) {
+            return { id: guid(d.reliance_healthscoredatasourceid), name: displayPart(d.reliance_datasourcename) || tableName(d.reliance_datasourcename), weight: Number(d.reliance_weight || 0) };
+          });
+          if (!sources.length) return { sources: sources, rules: 0 };
+          var f = sources.map(function (s) { return '_reliance_datasourcelookup_value eq ' + s.id; }).join(' or ');
+          return X.WebApi.retrieveMultipleRecords('reliance_healthscorerule', '?$select=reliance_healthscoreruleid&$filter=reliance_enabled eq true and (' + f + ')')
+            .then(function (rr) { return { sources: sources, rules: rr.entities.length }; });
+        });
+    },
+    count: function (extra) {
+      return fetch(RESULT, '<fetch aggregate="true"><entity name="' + RESULT + '"><attribute name="reliance_healthscoreresultid" aggregate="count" alias="n"/><filter>' + scope(extra) + '</filter></entity></fetch>')
+        .then(function (e) { return e.length ? Number(e[0].n || 0) : 0; });
+    },
+    average: function () {
+      return fetch(RESULT, '<fetch aggregate="true"><entity name="' + RESULT + '"><attribute name="reliance_finalscore" aggregate="avg" alias="a"/><filter>' + scope() + '</filter></entity></fetch>')
+        .then(function (e) { return e.length && e[0].a != null ? Math.round(Number(e[0].a)) : null; });
+    },
+    riskCounts: function () {
+      return fetch(RESULT, '<fetch aggregate="true"><entity name="' + RESULT + '"><attribute name="reliance_risklevel" groupby="true" alias="r"/><attribute name="reliance_healthscoreresultid" aggregate="count" alias="n"/><filter>' + scope() + '</filter></entity></fetch>')
+        .then(function (e) { var out = { 1: 0, 2: 0, 3: 0, 4: 0 }; e.forEach(function (x) { if (out[x.r] != null) out[x.r] = Number(x.n || 0); }); return out; });
+    },
+    bands: function () {
+      return Promise.all(BANDS.map(function (b) {
+        return live.count('<condition attribute="reliance_finalscore" operator="ge" value="' + b[0] + '"/><condition attribute="reliance_finalscore" operator="le" value="' + b[1] + '"/>');
+      }));
+    },
+    weekly: function () {
+      var xml = '<fetch aggregate="true"><entity name="' + RESULT + '">' +
+        '<attribute name="reliance_finalscore" aggregate="avg" alias="a"/>' +
+        '<attribute name="reliance_scoredon" groupby="true" dategrouping="year" alias="y"/>' +
+        '<attribute name="reliance_scoredon" groupby="true" dategrouping="week" alias="w"/>' +
+        '<filter>' + scope('<condition attribute="reliance_scoredon" operator="last-x-weeks" value="8"/>', false) + '</filter>' +
+        '<order alias="y"/><order alias="w"/></entity></fetch>';
+      return fetch(RESULT, xml).then(function (e) { return e.map(function (x) { return { label: 'W' + x.w, value: Math.round(Number(x.a)) }; }); });
+    },
+    top: function () {
+      var extra = FILTERS[state.filter] + searchCond();
+      var xml = '<fetch top="' + CONFIG.topRows + '"><entity name="' + RESULT + '">' +
+        COLS.map(function (c) { return '<attribute name="' + c + '"/>'; }).join('') +
+        '<order attribute="reliance_finalscore"/><filter>' + scope(extra) + '</filter></entity></fetch>';
+      return Promise.all([fetch(RESULT, xml), live.count(extra)]).then(function (res) {
+        var rows = res[0].map(toRow);
+        return live.previous(rows).then(function () { return { rows: rows, total: res[1] }; });
+      });
+    },
+    previous: function (rows) {                 // fills row.prev with the record's score before the latest
+      if (!rows.length) return Promise.resolve(rows);
+      var values = rows.map(function (r) { return '<value>' + xmlEsc(r.recordId) + '</value>'; }).join('');
+      var xml = '<fetch><entity name="' + RESULT + '"><attribute name="reliance_recordid"/><attribute name="reliance_finalscore"/>' +
+        '<order attribute="reliance_scoredon" descending="true"/><filter>' +
+        '<condition attribute="reliance_healthscoreprofile" operator="eq" value="' + state.profile.id + '"/>' +
+        '<condition attribute="reliance_islatest" operator="eq" value="0"/>' +
+        '<condition attribute="reliance_recordid" operator="in">' + values + '</condition></filter></entity></fetch>';
+      return fetch(RESULT, xml).then(function (e) {
+        var prev = {};
+        e.forEach(function (x) { var id = guid(x.reliance_recordid); if (!(id in prev)) prev[id] = x.reliance_finalscore; });
+        rows.forEach(function (r) { r.prev = prev[r.recordId]; });
+        return rows;
+      });
+    },
+    recent: function () {
+      var xml = '<fetch top="6"><entity name="' + RESULT + '">' + COLS.map(function (c) { return '<attribute name="' + c + '"/>'; }).join('') +
+        '<order attribute="reliance_scoredon" descending="true"/><filter>' + scope() + '</filter></entity></fetch>';
+      return fetch(RESULT, xml).then(function (e) { return e.map(toRow); });
+    },
+    declines: function () {
+      var xml = '<fetch top="50"><entity name="' + RESULT + '">' + COLS.map(function (c) { return '<attribute name="' + c + '"/>'; }).join('') +
+        '<order attribute="reliance_scoredon" descending="true"/><filter>' + scope(FILTERS.declining) + '</filter></entity></fetch>';
+      return fetch(RESULT, xml).then(function (e) {
+        var rows = e.map(toRow);
+        return live.previous(rows).then(function () {
+          return rows.filter(function (r) { return r.prev != null; })
+            .sort(function (a, b) { return (b.prev - b.score) - (a.prev - a.score); }).slice(0, 5);
+        });
+      });
+    }
+  };
+
+  // ---------------------------------------------------------------------------------------------
+  // Sample data (only when opened outside Dynamics)
+  // ---------------------------------------------------------------------------------------------
+  var demo = (function () {
+    var seed = 7; function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    var names = ['Kestrel Logistics', 'Savanna Telecom', 'Mara Energy', 'Lumen Health', 'Tana Agro', 'Baraka Foods', 'Rift Valley Motors', 'Amani Insurance', 'Kilima Water', 'Zuri Retail', 'Pwani Shipping', 'Nyota Labs'];
+    var owners = ['A. Wanjiru', 'J. Otieno', 'P. Kamau', 'M. Achieng'];
+    var reasons = ['No activity in 5 months; renewal due in 30 days.', 'Three high-priority cases open for over 2 weeks.', 'Lost the expansion opportunity; emails unanswered.', 'Quiet since the contract was signed; no open opportunities.', 'Recent case resolved quickly; renewal not yet discussed.', 'Active opportunity and regular emails this month.'];
+    var rows = [];
+    for (var i = 0; i < 240; i++) {
+      var score = Math.round(Math.pow(rnd(), 0.7) * 100);
+      var prev = Math.max(0, Math.min(100, score + Math.round((rnd() - 0.45) * 30)));
+      rows.push({ recordId: String(i), name: names[i % names.length] + (i >= names.length ? ' ' + (Math.floor(i / names.length) + 1) : ''),
+        owner: owners[i % owners.length], score: score, prev: prev,
+        risk: score >= 70 ? 1 : score >= 40 ? 2 : score >= 20 ? 3 : 4,
+        trend: score > prev + 3 ? 1 : score < prev - 3 ? 3 : 2,
+        reason: reasons[i % reasons.length], next: 'Book a check-in call to review open items and upcoming renewal.',
+        scoredOn: new Date(Date.now() - i * 7 * 60000).toISOString(), mine: i % 4 === 0 });
+    }
+    function scoped() {
+      return rows.filter(function (r) { return !state.mine || r.mine; });
+    }
+    function match(r, f) { return f === 'atrisk' ? r.risk >= 3 : f === 'declining' ? r.trend === 3 : true; }
+    var P = function (v) { return Promise.resolve(v); };
+    return {
+      profiles: function () { return P([{ id: 'demo', name: 'Account Health', table: 'account', active: true, ai: true }, { id: 'demo2', name: 'Deal Health', table: 'opportunity', active: true, ai: true }]); },
+      labels: function (t) { return P(t === 'opportunity' ? { singular: 'Opportunity', plural: 'Opportunities' } : { singular: 'Account', plural: 'Accounts' }); },
+      summary: function () { return P({ sources: [{ name: 'Case', weight: 55 }, { name: 'Opportunity', weight: 45 }], rules: 5 }); },
+      count: function (f) { var key = f === FILTERS.atrisk ? 'atrisk' : f === FILTERS.declining ? 'declining' : 'all'; return P(scoped().filter(function (r) { return match(r, key); }).length); },
+      average: function () { var s = scoped(); return P(Math.round(s.reduce(function (a, r) { return a + r.score; }, 0) / (s.length || 1))); },
+      riskCounts: function () { var o = { 1: 0, 2: 0, 3: 0, 4: 0 }; scoped().forEach(function (r) { o[r.risk]++; }); return P(o); },
+      bands: function () { return P(BANDS.map(function (b) { return scoped().filter(function (r) { return r.score >= b[0] && r.score <= b[1]; }).length; })); },
+      weekly: function () { return P([58, 59, 61, 60, 62, 61, 61, 63].map(function (v, i) { return { label: 'W' + (35 + i), value: v }; })); },
+      top: function () {
+        var q = state.search.toLowerCase();
+        var all = scoped().filter(function (r) { return match(r, state.filter) && (!q || r.name.toLowerCase().indexOf(q) >= 0); })
+          .sort(function (a, b) { return a.score - b.score; });
+        return P({ rows: all.slice(0, CONFIG.topRows), total: all.length });
+      },
+      recent: function () { return P(scoped().slice(0, 6)); },
+      declines: function () { return P(scoped().filter(function (r) { return r.trend === 3; }).sort(function (a, b) { return (b.prev - b.score) - (a.prev - a.score); }).slice(0, 5)); }
+    };
+  })();
+
+  var api = DEMO ? demo : live;
+
+  // ---------------------------------------------------------------------------------------------
+  // Charts (plain SVG, no libraries)
+  // ---------------------------------------------------------------------------------------------
+  function donut(counts) {
+    var total = counts[1] + counts[2] + counts[3] + counts[4];
+    var colors = { 1: 'var(--low)', 2: 'var(--medium)', 3: 'var(--high)', 4: 'var(--critical)' };
+    var C = 2 * Math.PI * 54, offset = 0, segs = '';
+    [1, 2, 3, 4].forEach(function (k) {
+      if (!counts[k] || !total) return;
+      var len = counts[k] / total * C;
+      segs += '<circle cx="66" cy="66" r="54" stroke="' + colors[k] + '" stroke-dasharray="' + len.toFixed(1) + ' ' + C.toFixed(1) + '" stroke-dashoffset="' + (-offset).toFixed(1) + '"/>';
+      offset += len;
+    });
+    var aria = [1, 2, 3, 4].map(function (k) { return RISK[k][0] + ' ' + counts[k]; }).join(', ');
+    return '<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">' +
+      '<svg width="132" height="132" viewBox="0 0 132 132" role="img" aria-label="Risk level: ' + esc(aria) + '">' +
+      '<circle cx="66" cy="66" r="54" fill="none" stroke="#E8ECF1" stroke-width="18"/>' +
+      '<g transform="rotate(-90 66 66)" fill="none" stroke-width="18">' + segs + '</g>' +
+      '<text x="66" y="64" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="20" font-weight="600" fill="#16202E">' + fmt(total) + '</text>' +
+      '<text x="66" y="82" text-anchor="middle" font-size="11" fill="#5B6675">' + esc(state.labels.plural.toLowerCase()) + '</text></svg>' +
+      '<div class="legend">' + [1, 2, 3, 4].map(function (k) {
+        return '<div><span class="sw" style="background:' + colors[k] + '"></span>' + RISK[k][0] + '<span class="n">' + fmt(counts[k]) + '</span></div>';
+      }).join('') + '</div></div>';
+  }
+
+  function line(points) {
+    if (points.length < 2) return '<div class="empty">Not enough scoring history yet. The trend appears once records have been scored over at least two weeks.</div>';
+    var vals = points.map(function (p) { return p.value; });
+    var lo = Math.max(0, Math.floor((Math.min.apply(null, vals) - 5) / 5) * 5), hi = Math.min(100, Math.ceil((Math.max.apply(null, vals) + 5) / 5) * 5);
+    if (hi - lo < 10) hi = Math.min(100, lo + 10);
+    var x = function (i) { return 34 + i * (300 / (points.length - 1)); };
+    var y = function (v) { return 140 - (v - lo) / (hi - lo) * 120; };
+    var pts = points.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p.value).toFixed(1); }).join(' ');
+    var last = points[points.length - 1];
+    var mid = Math.round((lo + hi) / 2);
+    var labels = points.map(function (p, i) { return (points.length <= 8 || i % 2 === 0) ? '<text x="' + x(i).toFixed(1) + '" y="160">' + esc(p.label) + '</text>' : ''; }).join('');
+    return '<svg viewBox="0 0 360 170" style="width:100%;height:auto" role="img" aria-label="Average health score by week, latest ' + last.value + '">' +
+      '<g stroke="#E8ECF1"><line x1="34" y1="20" x2="344" y2="20"/><line x1="34" y1="80" x2="344" y2="80"/><line x1="34" y1="140" x2="344" y2="140"/></g>' +
+      '<g font-size="11" fill="#5B6675" font-family="IBM Plex Mono, monospace" text-anchor="end"><text x="26" y="24">' + hi + '</text><text x="26" y="84">' + mid + '</text><text x="26" y="144">' + lo + '</text></g>' +
+      '<polygon points="' + x(0).toFixed(1) + ',140 ' + pts + ' ' + x(points.length - 1).toFixed(1) + ',140" fill="#0B5CD6" fill-opacity="0.08"/>' +
+      '<polyline points="' + pts + '" fill="none" stroke="#0B5CD6" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '<circle cx="' + x(points.length - 1).toFixed(1) + '" cy="' + y(last.value).toFixed(1) + '" r="4.5" fill="#0B5CD6"/>' +
+      '<text x="' + x(points.length - 1).toFixed(1) + '" y="' + (y(last.value) - 12).toFixed(1) + '" text-anchor="middle" font-size="12" font-weight="600" fill="#16202E" font-family="IBM Plex Mono, monospace">' + last.value + '</text>' +
+      '<g font-size="11" fill="#5B6675" text-anchor="middle">' + labels + '</g></svg>';
+  }
+
+  function bars(counts) {
+    var max = Math.max.apply(null, counts.concat([1]));
+    var out = '<svg viewBox="0 0 300 170" style="width:100%;height:auto" role="img" aria-label="Score distribution: ' +
+      BANDS.map(function (b, i) { return b[0] + '–' + b[1] + ' ' + counts[i]; }).join(', ') + '"><line x1="10" y1="140" x2="290" y2="140" stroke="#C9D0DA"/>';
+    counts.forEach(function (c, i) {
+      var h = c / max * 112, xx = 22 + i * 54;
+      out += '<rect x="' + xx + '" y="' + (140 - h).toFixed(1) + '" width="40" height="' + Math.max(h, c ? 2 : 0).toFixed(1) + '" rx="4" fill="' + BAND_COLORS[i] + '"/>' +
+        '<text x="' + (xx + 20) + '" y="' + (134 - h).toFixed(1) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#16202E" font-family="IBM Plex Mono, monospace">' + fmt(c) + '</text>' +
+        '<text x="' + (xx + 20) + '" y="158" text-anchor="middle" font-size="11" fill="#5B6675">' + BANDS[i][0] + '–' + BANDS[i][1] + '</text>';
+    });
+    return out + '</svg>';
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------------------------------
+  function badge(risk) { var r = RISK[risk]; return r ? '<span class="badge ' + r[1] + '">' + r[0] + '</span>' : ''; }
+  function change(r) {
+    if (r.prev == null || r.score == null) return '<span style="color:var(--muted)">New</span>';
+    var d = r.score - r.prev;
+    if (d > 0) return '<span class="up">▲ ' + d + '</span>';
+    if (d < 0) return '<span class="down">▼ ' + Math.abs(d) + '</span>';
+    return '<span style="color:var(--muted)">— 0</span>';
+  }
+
+  function renderKpis(k) {
+    var p = state.labels.plural;
+    var avgDelta = k.weekly.length >= 2 ? k.weekly[k.weekly.length - 1].value - k.weekly[k.weekly.length - 2].value : null;
+    var share = k.total ? Math.round(k.atRisk / k.total * 100) : 0;
+    $('kpis').innerHTML =
+      '<div class="card"><div class="kpi-label">' + esc(p) + ' scored</div><div class="kpi-row"><span class="kpi-value">' + fmt(k.total) + '</span></div><div class="sub" style="margin-top:4px">Latest score per record</div></div>' +
+      '<div class="card"><div class="kpi-label">Average health</div><div class="kpi-row"><span class="kpi-value">' + fmt(k.avg) + '</span>' +
+        (avgDelta == null ? '' : avgDelta >= 0 ? '<span class="up">▲ ' + avgDelta + ' vs last week</span>' : '<span class="down">▼ ' + Math.abs(avgDelta) + ' vs last week</span>') +
+        '</div><div class="meter"><div style="width:' + (k.avg || 0) + '%"></div></div></div>' +
+      '<div class="card"><div class="kpi-label">At risk</div><div class="kpi-row"><span class="kpi-value" style="color:var(--bad)">' + fmt(k.atRisk) + '</span><span class="sub">High + Critical</span></div><div class="sub" style="margin-top:4px">' + share + '% of scored ' + esc(p.toLowerCase()) + '</div></div>' +
+      '<div class="card"><div class="kpi-label">Declining</div><div class="kpi-row"><span class="kpi-value">' + fmt(k.declining) + '</span></div><div class="sub" style="margin-top:4px">Score fell more than 3 points at last scoring</div></div>';
+  }
+
+  function renderTable(t) {
+    $('tableTitle').textContent = state.labels.plural + ' needing attention';
+    $('colName').textContent = state.labels.singular;
+    if (!t.rows.length) {
+      $('rows').innerHTML = '<tr><td colspan="7" class="empty">' + (state.search ? 'No matches for "' + esc(state.search) + '".' : 'Nothing here. ' + (state.filter === 'atrisk' ? 'No records are at risk.' : '')) + '</td></tr>';
+    } else {
+      $('rows').innerHTML = t.rows.map(function (r, i) {
+        return '<tr><td class="name"><a href="#" data-open="' + i + '">' + esc(r.name) + '</a></td><td>' + esc(r.owner) + '</td><td class="score">' + fmt(r.score) + '</td>' +
+          '<td>' + badge(r.risk) + '</td><td>' + change(r) + '</td><td class="reason" title="' + esc(r.reason) + '">' + esc(r.reason) + '</td><td style="color:var(--muted);white-space:nowrap">' + ago(r.scoredOn) + '</td></tr>';
+      }).join('');
+    }
+    state.tableRows = t.rows;
+    $('showing').textContent = t.total ? 'Showing ' + t.rows.length + ' of ' + fmt(t.total) : '';
+    var names = { atrisk: 'at-risk', declining: 'declining', all: '' };
+    $('viewAll').textContent = 'View all ' + (names[state.filter] ? names[state.filter] + ' ' : '') + state.labels.plural.toLowerCase();
+  }
+
+  function renderSummary(s) {
+    var p = state.profile, total = s.sources.reduce(function (a, x) { return a + x.weight; }, 0);
+    $('profilePanel').innerHTML = '<div class="eyebrow">Active profile</div><div class="title">' + esc(p.name) + '</div>' +
+      '<div style="font-size:13px;margin-top:2px;opacity:0.9">Scores ' + esc(state.labels.singular) + ' records · AI review ' + (p.ai ? 'on' : 'off') + '</div>' +
+      '<div class="stats"><div class="stat"><b>' + s.sources.length + '</b>data sources</div><div class="stat"><b>' + s.rules + '</b>rules</div><div class="stat"><b>' + fmt(total) + '</b>total weight</div></div>' +
+      '<div class="weights">' + s.sources.map(function (x) {
+        return '<div>' + esc(x.name) + '<span class="bar"><i style="width:' + Math.min(100, x.weight) + '%"></i></span><span class="mono">' + fmt(x.weight) + '</span></div>';
+      }).join('') + '</div>';
+  }
+
+  function renderDeclines(rows) {
+    $('declines').innerHTML = rows.length ? rows.map(function (r) {
+      return '<div class="list-row"><span class="grow" style="font-weight:600">' + esc(r.name) + '</span><span class="mono" style="color:var(--muted)">' + r.prev + ' → ' + r.score + '</span><span class="mono down" style="min-width:36px;text-align:right">−' + (r.prev - r.score) + '</span></div>';
+    }).join('') : '<div class="empty">No declines at the last scoring.</div>';
+  }
+
+  function renderActions(rows) {
+    var withAction = rows.filter(function (r) { return r.next && r.risk >= 3; }).slice(0, 3);
+    state.actionRows = withAction;
+    $('actions').innerHTML = withAction.length ? withAction.map(function (r, i) {
+      return '<div class="action"><div style="font-size:13px;font-weight:600">' + esc(r.name) + '</div><div style="font-size:13px;color:var(--ink-2);margin-top:4px">' + esc(r.next) + '</div>' +
+        '<button type="button" class="btn-outline" style="margin-top:8px" data-task="' + i + '">Create task</button></div>';
+    }).join('') : '<div class="empty">No suggested actions for at-risk records.</div>';
+  }
+
+  function renderRecent(rows) {
+    $('recent').innerHTML = rows.length ? rows.map(function (r) {
+      return '<div class="list-row"><span class="grow">' + esc(r.name) + ' scored <strong>' + fmt(r.score) + '</strong></span><span style="color:var(--muted)">' + ago(r.scoredOn) + '</span></div>';
+    }).join('') : '<div class="empty">No scores yet.</div>';
+    $('lastScored').textContent = (rows[0] ? 'Last scored ' + new Date(rows[0].scoredOn).toLocaleString() : 'Not scored yet') + (DEMO ? ' · Sample data (open inside Dynamics for live data)' : '');
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Loading
+  // ---------------------------------------------------------------------------------------------
+  function loadTable() {
+    $('rows').innerHTML = '<tr><td colspan="7" class="skeleton">Loading…</td></tr>';
+    return api.top().then(renderTable);
+  }
+
+  function loadAll() {
+    if (!state.profile) return Promise.resolve();
+    $('refreshBtn').disabled = true;
+    banner();
+    return api.labels(state.profile.table).then(function (l) {
+      state.labels = l;
+      $('search').placeholder = 'Search ' + l.plural.toLowerCase();
+      $('riskSub').textContent = 'Latest score per ' + l.singular.toLowerCase();
+      return Promise.all([
+        api.count(''), api.average(), api.count(FILTERS.atrisk), api.count(FILTERS.declining), api.weekly(),
+        api.riskCounts(), api.bands(), api.summary(), api.declines(), api.recent(), api.top()
+      ]);
+    }).then(function (r) {
+      var k = { total: r[0], avg: r[1], atRisk: r[2], declining: r[3], weekly: r[4] };
+      renderKpis(k);
+      $('riskChart').innerHTML = donut(r[5]);
+      $('trendChart').innerHTML = line(r[4]);
+      $('trendSub').textContent = r[4].length >= 2 ? 'From ' + r[4][0].value + ' to ' + r[4][r[4].length - 1].value : 'Average of all scores run each week';
+      $('bandChart').innerHTML = bars(r[6]);
+      renderSummary(r[7]);
+      renderDeclines(r[8]);
+      renderRecent(r[9]);
+      renderTable(r[10]);
+      renderActions(r[10].rows.concat(r[8]));
+      if (!r[0]) banner('info', 'No current scores for this profile yet. Score some records, and they will appear here.');
+    }).catch(function (e) {
+      console.error(e);
+      banner('error', 'The dashboard could not load: ' + (e && e.message ? e.message : e));
+    }).then(function () { $('refreshBtn').disabled = false; });
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------------------------------
+  function openRecord(r) {
+    if (DEMO) return banner('info', 'In Dynamics this opens ' + r.name + '.');
+    X.Navigation.openForm({ entityName: state.profile.table, entityId: r.recordId });
+  }
+  function openView() {
+    if (DEMO) return banner('info', 'In Dynamics this opens the matching Health Score Result view.');
+    X.Navigation.navigateTo({ pageType: 'entitylist', entityName: RESULT, viewId: CONFIG.views[state.filter], viewType: 'savedquery' }, { target: 1 });
+  }
+  function createTask(r) {
+    if (DEMO) return banner('info', 'In Dynamics this opens a new task for ' + r.name + '.');
+    X.Navigation.openForm({ entityName: 'task', useQuickCreateForm: true }, {
+      subject: ('Health follow-up: ' + r.name).substring(0, 200),
+      description: r.next || '',
+      regardingobjectid: r.recordId, regardingobjectidname: r.name, regardingobjecttype: state.profile.table
+    });
+  }
+
+  function setMine(mine) {
+    state.mine = mine;
+    $('mineBtn').setAttribute('aria-pressed', String(mine));
+    $('allBtn').setAttribute('aria-pressed', String(!mine));
+    loadAll();
+  }
+
+  $('mineBtn').addEventListener('click', function () { if (!state.mine) setMine(true); });
+  $('allBtn').addEventListener('click', function () { if (state.mine) setMine(false); });
+  $('refreshBtn').addEventListener('click', loadAll);
+  $('viewAll').addEventListener('click', openView);
+  $('profile').addEventListener('change', function () {
+    state.profile = state.profiles.filter(function (p) { return p.id === $('profile').value; })[0];
+    state.search = ''; $('search').value = '';
+    loadAll();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (chip) {
+    chip.addEventListener('click', function () {
+      state.filter = chip.getAttribute('data-filter');
+      Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (c) { c.setAttribute('aria-pressed', String(c === chip)); });
+      loadTable().catch(function (e) { banner('error', e.message || e); });
+    });
+  });
+  var searchTimer;
+  $('search').addEventListener('input', function () {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () { state.search = $('search').value.trim(); loadTable().catch(function (e) { banner('error', e.message || e); }); }, 350);
+  });
+  $('rows').addEventListener('click', function (e) {
+    var a = e.target.closest('[data-open]'); if (!a) return;
+    e.preventDefault(); openRecord(state.tableRows[Number(a.getAttribute('data-open'))]);
+  });
+  $('actions').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-task]'); if (b) createTask(state.actionRows[Number(b.getAttribute('data-task'))]);
+  });
+
+  // ---------------------------------------------------------------------------------------------
+  // Start
+  // ---------------------------------------------------------------------------------------------
+  api.profiles().then(function (profiles) {
+    var active = profiles.filter(function (p) { return p.active && p.table; });
+    state.profiles = active.length ? active : profiles.filter(function (p) { return p.table; });
+    if (!state.profiles.length) { banner('info', 'No health score profiles found. Create and activate a profile first.'); $('refreshBtn').disabled = true; return; }
+    $('profile').innerHTML = state.profiles.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + ' · ' + esc(p.table) + '</option>'; }).join('');
+    state.profile = state.profiles[0];
+    return loadAll();
+  }).catch(function (e) { console.error(e); banner('error', 'Profiles could not be loaded: ' + (e && e.message ? e.message : e)); });
+})();
+</script>
+</body>
+</html>
