@@ -1,0 +1,24 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build Azure Functions
+        run: dotnet build src/HealthScore.Functions/HealthScore.Functions.csproj --configuration Release
+
+      - name: Check web resource scripts
+        run: node --check src/webresources/reliance_rulecondition.js
